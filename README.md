@@ -14,6 +14,8 @@ For this project, a Basys 3 board and an Adafruit RGB matrix are being utilized 
 ## Miscellanous Online References:
 [Driving a 64*64 RGB LED panel with an FPGA](https://justanotherelectronicsblog.com/?p=636)
 
+----------------------------------------------------------------------------------------------------
+
 >[!IMPORTANT] 
 >1. The pattern generator and frame buffer logic is specific to the 32x32 matrix. Other sizes will vary in their implementation.
 >2. If using a different FPGA board, refer to that board's specifications to ensure it will properly drive the matrix. 
