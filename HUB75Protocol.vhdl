@@ -66,22 +66,17 @@ begin
     R0 <= rgb(2); G0 <= rgb(1); B0 <= rgb(0);
     R1 <= rgb(2); G1 <= rgb(1); B1 <= rgb(0);
 
-    -- Send divided clock to board
-    clk_out <= clk_div;
     ------------------------------------------------------------------------------------------------
 
 
 
     -- ***Sequential Blocks: ***
     ------------------------------------------------------------------------------------------------
+
     process(clk_div)
-        -- *** Process Variables ***
-        ------------------------------------------------------------------------------------------------
-        variable count : std_logic_vector(10 downto 0); -- Will keep track of the refresh rate (goal is 60 kHz)
-        ------------------------------------------------------------------------------------------------
-        -- *** Process Begin ***
         begin
             if rising_edge(clk_div) then
+                clk_out <= '0';
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blankIn = '0' then   -- If blank is not set, then line is active (MUST NOW MOVE TO NEXT ROW)
 
@@ -116,6 +111,7 @@ begin
                         row := std_logic_vector(unsigned(row) + 1); -- Row address is incremented to the next
                     -- If nothing else is set, then continue incrementing through the columns
                     else 
+                        clk_out <= '1';
                         colCount := colCount + 1;
                     end if;
 
