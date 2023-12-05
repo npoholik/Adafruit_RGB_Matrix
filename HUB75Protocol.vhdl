@@ -46,7 +46,7 @@ architecture behav of HUB75Protocol is
     signal colCount : std_logic_vector(5 downto 0);      -- signal for current column, counts up to 31 (32 total columns)
 
     signal rgb : std_logic(2 downto 0);            -- signal for color values of an individual pixel 
-    signal rgbCounter : std_logic(15 downto 0);
+    signal rgbCounter : integer := 1;             -- will determine when to change RGB values
 
     signal count : integer := 1;                -- Count signals for clock divider/pulse width
     signal clk_div : std_logic;                 -- 60 kHz clock to use for outputting to board as well as in main process
@@ -136,6 +136,19 @@ begin
                     count <= 1;
                 end if;
             end if;
+    end process;
+
+
+    -- *** PROCESS TO UPDATE RGB VALUES ***
+    process(rowCount, colCount) 
+    begin 
+        if rowCount = "1111" and colCount = "11111" then
+            rgbCount <= rgbCount + 1;
+            if rgbCount = 801 then -- Looking for ~800 refreshes of the entire board 
+                rgb <= std_logic_vector(unsigned(rgb) + 1);
+                rgbCount <= 1;
+            end if;
+        end if;
     end process;
 
     ------------------------------------------------------------------------------------------------
