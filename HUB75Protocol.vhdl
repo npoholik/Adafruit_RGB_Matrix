@@ -73,10 +73,10 @@ begin
     -- ***Sequential Blocks: ***
     ------------------------------------------------------------------------------------------------
 
-    process(clk_div)
+    Main: process(clk_div)
         begin
             if rising_edge(clk_div) then
-                clk_out <= '0';
+                clk_out <= '0'; -- send a negative clock edge to prepare a new column to be set 
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blankIn = '0' then   -- If blank is not set, then line is active (MUST NOW MOVE TO NEXT ROW)
 
@@ -98,7 +98,7 @@ begin
 
                     -- Indicates all data is loaded into the columns, and row is ready to be latch (low to high)
                     if colCount = "11111" then 
-                        colCount := "00000";
+                        colCount <= "00000";
                         latchStatus <= '1';
                     -- Indicates that the latch will be written high to prepare the buffer to transfer
                     elsif latchStatus = '1' then
@@ -108,21 +108,21 @@ begin
                     elsif latchIn = '1' then
                         latchIn <= '0'; -- High to low for latch, data loaded into row
                         blankIn <= '0'; -- Row is turned back on by clearing blank
-                        row := std_logic_vector(unsigned(row) + 1); -- Row address is incremented to the next
+                        rowCount <= std_logic_vector(to_unsigned( to_integer(unsigned(row)) + 1 ) ) ; -- Row address is incremented to the next
                     -- If nothing else is set, then continue incrementing through the columns
                     else 
-                        clk_out <= '1';
+                        clk_out <= '1'; -- send positive clock edge out for data in a specific column
                         colCount := colCount + 1;
                     end if;
 
-                end if;          
+                end if;      
                 ----------------------------------------------------------------------------------------------------------------------------------------
             end if;
     end process;
 
 
     -- *** PROCESS TO OUTPUT 60 KHZ CLOCK ***
-    process(clk) 
+    ClockDivider: process(clk) 
         variable temp : std_logic;
         begin
             if rising_edge(clk) then
@@ -136,12 +136,12 @@ begin
 
 
     -- *** PROCESS TO UPDATE RGB VALUES ***
-    process(rowCount, colCount) 
+    UpdateRGB: process(rowCount, colCount) 
     begin 
         if rowCount = "1111" and colCount = "11111" then
             rgbCount <= rgbCount + 1;
             if rgbCount = 801 then -- Looking for ~800 refreshes of the entire board 
-                rgb <= std_logic_vector(unsigned(rgb) + 1);
+                rgb <= std_logic_vector( to_unsigned( to_integer(unsigned(rgb)) + 1 ) );
                 rgbCount <= 1;
             end if;
         end if;
