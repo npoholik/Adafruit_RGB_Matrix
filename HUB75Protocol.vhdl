@@ -30,10 +30,10 @@ architecture behav of HUB75Protocol is
 -- ******************************************************************************************************************
 -- *** LOGIC GOALS FOR ARCHITECTURE: ***
 --  1. Select which line to display using the 4 address (A[3:0]) given the RGB matrix has 16 lines to pick signal
---  2. Turn the display off by making the Blank pin high (avoids glitches)
+--  2. Turn the row display off by making the Blank pin high (avoids glitches)
 --  3. Clock 32 bits of data using the Clock pin and RGB signal
 --  4. Toggle the latch pin from high to low, which will load the data into the signal
---  5. Turn the display on by making the blank pin signal
+--  5. Turn the row display on by setting the blank pin low
 -- **** CLOCK OF 60 kHZ for 32x32 MATRIX *****
 -- *******************************************************************************************************************
 
@@ -59,6 +59,8 @@ begin
     ------------------------------------------------------------------------------------------------
     -- Internal signal to output signal assignments
     -- latchIn and blankIN helps know internally what value will be getting output to the board
+    -- ***ALTERNATIVELY, MAKE LATCH AND BLANK BUFFER SIGNALS IN ENTITY DECLARATION ***
+    -- ^^^ would honestly be easier, it didn't occur to me when initially starting
     latch <= latchIn;
     blank <= blankIn;
 
@@ -138,7 +140,7 @@ begin
     -- *** PROCESS TO UPDATE RGB VALUES ***
     UpdateRGB: process(rowCount, colCount) 
     begin 
-        if rowCount = "1111" and colCount = "11111" then
+        if rowCount = "1111" and colCount = "11111" then -- These equalities represent 
             rgbCount <= rgbCount + 1;
             if rgbCount = 801 then -- Looking for ~800 refreshes of the entire board 
                 rgb <= std_logic_vector( to_unsigned( to_integer(unsigned(rgb)) + 1 ) );
