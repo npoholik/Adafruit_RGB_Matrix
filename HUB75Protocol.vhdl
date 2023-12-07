@@ -42,10 +42,10 @@ architecture behav of HUB75Protocol is
     signal latchStatus, blankStatus : std_logic;   -- will allow determination of next step to take
     signal latchIn, blankIn : std_logic := '0';    -- will determine what is going to be output onto matrix board (also means it can be read during process unlike output latch and blank)
 
-    signal rowCount : std_logic_vector(3 downto 0);      -- signal for row address, counts up to 15 (16 total rows)
-    signal colCount : std_logic_vector(5 downto 0);      -- signal for current column, counts up to 31 (32 total columns)
+    signal rowCount : std_logic_vector(3 downto 0) := "0000";      -- signal for row address, counts up to 15 (16 total rows)
+    signal colCount : std_logic_vector(4 downto 0) := "00000";      -- signal for current column, counts up to 31 (32 total columns)
 
-    signal rgb : std_logic(2 downto 0);            -- signal for color values of an individual pixel 
+    signal rgb : std_logic_vector(2 downto 0) := "001";            -- signal for color values of an individual pixel 
     signal rgbCounter : integer := 1;             -- will determine when to change RGB values
 
     signal count : integer := 1;                -- Count signals for clock divider/pulse width
@@ -59,6 +59,8 @@ begin
     ------------------------------------------------------------------------------------------------
     -- Internal signal to output signal assignments
     -- latchIn and blankIN helps know internally what value will be getting output to the board
+    -- ***ALTERNATIVELY, MAKE LATCH AND BLANK BUFFER SIGNALS IN ENTITY DECLARATION ***
+    -- ^^^ would honestly be easier, it didn't occur to me when initially starting
     latch <= latchIn;
     blank <= blankIn;
 
@@ -76,7 +78,7 @@ begin
     process(clk_div)
         begin
             if rising_edge(clk_div) then
-                clk_out <= '0';
+                clk_out <= '1';
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blankIn = '0' then   -- If blank is not set, then line is active (MUST NOW MOVE TO NEXT ROW)
 
@@ -92,13 +94,12 @@ begin
                         blankStatus <= '0';
                         blankIn <= '1';
                     end if;
-
                 ----------------------------------------------------------------------------------------------------------------------------------------  
                 else  -- else blank is set, and line is not active (updating colors will now take place)
 
                     -- Indicates all data is loaded into the columns, and row is ready to be latch (low to high)
                     if colCount = "11111" then 
-                        colCount := "00000";
+                        colCount <= "00000";
                         latchStatus <= '1';
                     -- Indicates that the latch will be written high to prepare the buffer to transfer
                     elsif latchStatus = '1' then
@@ -108,15 +109,16 @@ begin
                     elsif latchIn = '1' then
                         latchIn <= '0'; -- High to low for latch, data loaded into row
                         blankIn <= '0'; -- Row is turned back on by clearing blank
-                        row := std_logic_vector(unsigned(row) + 1); -- Row address is incremented to the next
+                        rowCount <= std_logic_vector(unsigned(rowCount) + 1); -- Row address is incremented to the next
                     -- If nothing else is set, then continue incrementing through the columns
                     else 
-                        clk_out <= '1';
-                        colCount := colCount + 1;
+                        colCount <= std_logic_vector(unsigned(colCount) + 1);
                     end if;
 
                 end if;          
                 ----------------------------------------------------------------------------------------------------------------------------------------
+            else 
+                clk_out <= '0';
             end if;
     end process;
 
@@ -139,10 +141,10 @@ begin
     process(rowCount, colCount) 
     begin 
         if rowCount = "1111" and colCount = "11111" then
-            rgbCount <= rgbCount + 1;
-            if rgbCount = 801 then -- Looking for ~800 refreshes of the entire board 
+            rgbCounter <= rgbCount + 1;
+            if rgbCounter = 801 then -- Looking for ~800 refreshes of the entire board 
                 rgb <= std_logic_vector(unsigned(rgb) + 1);
-                rgbCount <= 1;
+                rgbCounter <= 1;
             end if;
         end if;
     end process;
