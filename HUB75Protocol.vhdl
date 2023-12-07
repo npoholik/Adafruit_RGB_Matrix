@@ -45,7 +45,7 @@ architecture behav of HUB75Protocol is
     signal rowCount : std_logic_vector(3 downto 0) := "0000";      -- signal for row address, counts up to 15 (16 total rows)
     signal colCount : std_logic_vector(4 downto 0) := "00000";      -- signal for current column, counts up to 31 (32 total columns)
 
-    signal rgb : std_logic_vector(2 downto 0) := "001";            -- signal for color values of an individual pixel 
+    signal rgb : std_logic_vector(2 downto 0) := "001";            -- signal for color values of an individual pixel (initial value: blue)
     signal rgbCounter : integer := 1;             -- will determine when to change RGB values
 
     signal count : integer := 1;                -- Count signals for clock divider/pulse width
@@ -67,18 +67,16 @@ begin
     -- Send color data to the RGB pins
     R0 <= rgb(2); G0 <= rgb(1); B0 <= rgb(0);
     R1 <= rgb(2); G1 <= rgb(1); B1 <= rgb(0);
-
     ------------------------------------------------------------------------------------------------
 
 
 
     -- ***Sequential Blocks: ***
     ------------------------------------------------------------------------------------------------
-
     Main: process(clk_div)
         begin
             if rising_edge(clk_div) then
-                clk_out <= '0';
+                clk_out <= '1';
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blankIn = '0' then   -- If blank is not set, then line is active (MUST NOW MOVE TO NEXT ROW)
 
@@ -109,11 +107,10 @@ begin
                     elsif latchIn = '1' then
                         latchIn <= '0'; -- High to low for latch, data loaded into row
                         blankIn <= '0'; -- Row is turned back on by clearing blank
-                        row := std_logic_vector(unsigned(row) + 1); -- Row address is incremented to the next
+                        rowCount <= std_logic_vector(unsigned(row) + 1); -- Row address is incremented to the next
                     -- If nothing else is set, then continue incrementing through the columns
                     else 
-                        clk_out <= '1';
-                        colCount := colCount + 1;
+                        colCount <= std_logic_vector(unsigned(colCount) + 1);
                     end if;
 
                 end if;      
@@ -126,7 +123,7 @@ begin
 
     -- *** PROCESS TO OUTPUT 60 KHZ CLOCK ***
     ClockDivider: process(clk) 
-        variable temp : std_logic;
+        variable temp : std_logic := '0';
         begin
             if rising_edge(clk) then
                 count <= count + 1;
@@ -141,11 +138,11 @@ begin
     -- *** PROCESS TO UPDATE RGB VALUES ***
     UpdateRGB: process(rowCount, colCount) 
     begin 
-        if rowCount = "1111" and colCount = "11111" then
-            rgbCount <= rgbCount + 1;
-            if rgbCount = 801 then -- Looking for ~800 refreshes of the entire board 
+        if rowCounter = "1111" and colCount = "11111" then
+            rgbCounter <= rgbCounter + 1;
+            if rgbCounter = 801 then -- Looking for ~800 refreshes of the entire board 
                 rgb <= std_logic_vector(unsigned(rgb) + 1);
-                rgbCount <= 1;
+                rgbCounter <= 1;
             end if;
         end if;
     end process;
