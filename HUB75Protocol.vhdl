@@ -30,10 +30,10 @@ architecture behav of HUB75Protocol is
 -- ******************************************************************************************************************
 -- *** LOGIC GOALS FOR ARCHITECTURE: ***
 --  1. Select which line to display using the 4 address (A[3:0]) given the RGB matrix has 16 lines to pick signal
---  2. Turn the display off by making the Blank pin high (avoids glitches)
+--  2. Turn the row display off by making the Blank pin high (avoids glitches)
 --  3. Clock 32 bits of data using the Clock pin and RGB signal
 --  4. Toggle the latch pin from high to low, which will load the data into the signal
---  5. Turn the display on by making the blank pin signal
+--  5. Turn the row display on by setting the blank pin low
 -- **** CLOCK OF 60 kHZ for 32x32 MATRIX *****
 -- *******************************************************************************************************************
 
@@ -75,10 +75,10 @@ begin
     -- ***Sequential Blocks: ***
     ------------------------------------------------------------------------------------------------
 
-    process(clk_div)
+    Main: process(clk_div)
         begin
             if rising_edge(clk_div) then
-                clk_out <= '1';
+                clk_out <= '0';
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blankIn = '0' then   -- If blank is not set, then line is active (MUST NOW MOVE TO NEXT ROW)
 
@@ -109,13 +109,14 @@ begin
                     elsif latchIn = '1' then
                         latchIn <= '0'; -- High to low for latch, data loaded into row
                         blankIn <= '0'; -- Row is turned back on by clearing blank
-                        rowCount <= std_logic_vector(unsigned(rowCount) + 1); -- Row address is incremented to the next
+                        row := std_logic_vector(unsigned(row) + 1); -- Row address is incremented to the next
                     -- If nothing else is set, then continue incrementing through the columns
                     else 
-                        colCount <= std_logic_vector(unsigned(colCount) + 1);
+                        clk_out <= '1';
+                        colCount := colCount + 1;
                     end if;
 
-                end if;          
+                end if;      
                 ----------------------------------------------------------------------------------------------------------------------------------------
             else 
                 clk_out <= '0';
@@ -124,7 +125,7 @@ begin
 
 
     -- *** PROCESS TO OUTPUT 60 KHZ CLOCK ***
-    process(clk) 
+    ClockDivider: process(clk) 
         variable temp : std_logic;
         begin
             if rising_edge(clk) then
@@ -138,13 +139,13 @@ begin
 
 
     -- *** PROCESS TO UPDATE RGB VALUES ***
-    process(rowCount, colCount) 
+    UpdateRGB: process(rowCount, colCount) 
     begin 
         if rowCount = "1111" and colCount = "11111" then
-            rgbCounter <= rgbCount + 1;
-            if rgbCounter = 801 then -- Looking for ~800 refreshes of the entire board 
+            rgbCount <= rgbCount + 1;
+            if rgbCount = 801 then -- Looking for ~800 refreshes of the entire board 
                 rgb <= std_logic_vector(unsigned(rgb) + 1);
-                rgbCounter <= 1;
+                rgbCount <= 1;
             end if;
         end if;
     end process;
