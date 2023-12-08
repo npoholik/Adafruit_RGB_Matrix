@@ -17,6 +17,7 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.STD_LOGIC_UNSIGNED.all;
 use IEEE.NUMERIC_STD.all;
 
+
 entity HUB75Protocol is
     port (clk : in std_logic;                 -- Internal clock, Basys 3 clock ~100 MHz
           clk_out : out std_logic;            -- clock that is output to RGB matrix board
@@ -51,11 +52,25 @@ architecture behav of HUB75Protocol is
     --signal rgb : unsigned(2 downto 0) := "001";            -- signal for color values of an individual pixel (initial value: blue)
 
     --signal count : integer := 1;                -- Count signals for clock divider/pulse width
-    --signal clk_div : std_logic;                 -- 60 kHz clock to use for outputting to board as well as in main process
+    signal clk_div : std_logic;                 -- 60 kHz clock to use for outputting to board as well as in main process
+    signal reset : std_logic;
+    signal locked : std_logic; 
     
     signal willLatchData, willSetBlank : std_logic := '0'; -- will let process know when to get ready to latch (high -> signal to board)
 ----------------------------------------------------------------------------------------------------
 
+    -- *** COMPONENT INSTANTIATION: ***
+    component clk_wiz
+        port
+        (-- Clock in ports
+         -- Clock out ports
+          clk_out          : out    std_logic;
+         -- Status and control signals
+          reset             : in     std_logic;
+          locked            : out    std_logic;
+          clk_in           : in     std_logic
+        );
+    end component;
 
 -- ***Architecture begin***
 begin
@@ -74,11 +89,21 @@ begin
     
     ------------------------------------------------------------------------------------------------
 
-
+    --*** COMPONENT INSTANTIATION ***
+    ClockDivider : clk_wiz
+        port map ( 
+        -- Clock out ports  
+            clk_out => clk_div,
+        -- Status and control signals                
+            reset => reset,
+            locked => locked,
+        -- Clock in ports
+            clk_in => clk
+        );
 
     -- ***Sequential Blocks: ***
     ------------------------------------------------------------------------------------------------
-    Main: process(clk)
+    Main: process(clk_div)
      --*** Variable declarations: ***
      variable rowCount : unsigned(3 downto 0) := "0000";   --signal for row address, counts up to 15 (16 total rows)
      variable colCount : unsigned(4 downto 0) := "00000";  -- signal for current column, counts up to 31 (32 total columns)
@@ -88,10 +113,10 @@ begin
      --*** PROCESS BEGIN ***               
         begin
             if blank = '1' then
-                clk_out <= clk; -- clock data into each column by sending out clock 
+                clk_out <= clk_div; -- clock data into each column by sending out clock 
             end if;
             
-            if rising_edge(clk) then
+            if rising_edge(clk_div) then
                 -- *** LOGIC TO HANDLE REFRESHING: ***
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blank = '0' then   -- If blank is not set, then line is active (TURN OFF NEXT ROW)
@@ -115,7 +140,7 @@ begin
                         
                         --*** LOGIC TO SHIFT RGB VALUE ***
                         cycleRGB := cycleRGB + 1;
-                            if cycleRGB = 800 then -- Looking for 50 cycles of all columns being refreshed
+                            if cycleRGB = 100000 then -- Looking for 50 cycles of all columns being refreshed
                                 cycleRGB := 1;
                                 rgb := std_logic_vector(unsigned(rgb) + 1); -- increment color value by 1 (entire pattern is 8 including off)
                             end if;
@@ -143,6 +168,7 @@ begin
     end process;
 
 
+    
     -- *** OLD ITERATIONS: INCORRECT/UNUSED
     ---------------------------------------------------------------------------------------------------------------------------
 
