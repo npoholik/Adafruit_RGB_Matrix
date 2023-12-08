@@ -95,7 +95,6 @@ begin
                 if blank = '0' then   -- If blank is not set, then line is active (TURN OFF NEXT ROW)
                      blank <= '1'; -- asserting blank high turns off row
                      latch <= '0'; -- assert latch low
-                     clk <= '0';   -- do not send clock 
                 
                 elsif blank = '1' then  -- else blank is set, and line is not active (updating colors will now take place)
 
@@ -109,6 +108,7 @@ begin
                             latch <= '1'; 
                             willLatchData := '1'; -- Indicates that the latch will be written high to prepare the buffer to transfer
                         elsif willLatchData = '1' then
+                            clk <= '0';   -- Stop sending clock
                             latch <= '0'; -- Buffer toggled from high to low loads data into the row
                             blank <= '0'; 
                             rowCount := rowCount + 1; -- Row address is incremented to the next
