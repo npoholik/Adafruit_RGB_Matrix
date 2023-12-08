@@ -89,47 +89,50 @@ begin
 
      --*** PROCESS BEGIN ***               
         begin
+            if blank = '1' then
+                clk_out <= clk; -- clock data into each column by sending out clock 
+            end if;
+            
             if rising_edge(clk) then
                 -- *** LOGIC TO HANDLE REFRESHING: ***
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blank = '0' then   -- If blank is not set, then line is active (TURN OFF NEXT ROW)
                      blank <= '1'; -- asserting blank high turns off row
                      latch <= '0'; -- assert latch low
-                     clk <= '0';   -- do not send clock 
-                
+                     willLatchData := '0'; -- Will need to wait for another column refresh to latch A0
+                     
                 elsif blank = '1' then  -- else blank is set, and line is not active (updating colors will now take place)
 
-                    clk_out <= clk; -- clock data into each column by sending out clock 
                     -- Send in current RGB Data to board
                     R0 <= rgb(2); G0 <= rgb(1); B0 <= rgb(0);
                     R1 <= rgb(2); G1 <= rgb(1); B1 <= rgb(0);
                     -- Indicates all data is loaded into the columns, and row is ready to be latch (low to high)
                     if colCount = "11111" then 
-                        if latchData = '0' then
+                        if willLatchData = '0' then
                             latch <= '1'; 
                             willLatchData := '1'; -- Indicates that the latch will be written high to prepare the buffer to transfer
                         elsif willLatchData = '1' then
                             latch <= '0'; -- Buffer toggled from high to low loads data into the row
                             blank <= '0'; 
                             rowCount := rowCount + 1; -- Row address is incremented to the next
-                            -- **Update Address value out to board
+                            colCount := "00000";
+                          -- **Update Address value out to board
                             A3 <= std_logic(rowCount(3));
                             A2 <= std_logic(rowCount(2));
                             A1 <= std_logic(rowCount(1));
                             A0 <= std_logic(rowCount(0));
-                            colCount := "00000";
                         end if;
                     else 
-                         colCount <= colCount + 1; -- move to next column
+                         colCount := colCount + 1; -- move to next column
                     end if;
                 else 
                     blank <= '0';
-                    latchData <= '0';
+                    willLatchData := '0';
                 end if;   
                 
                 --*** LOGIC TO SHIFT RGB VALUE ***
                 cycleRGB := cycleRGB + 1;
-                if cycleRGB = 80000 then
+                if cycleRGB = 268435456 then
                     cycleRGB := 1;
                     rgb := rgb + 1;
                 end if;
@@ -204,4 +207,3 @@ begin
  
     ------------------------------------------------------------------------------------------------
 end behav;
-
