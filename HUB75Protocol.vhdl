@@ -23,7 +23,8 @@ entity HUB75Protocol is
           clk_out : out std_logic;            -- clock that is output to RGB matrix board
           blank, latch : buffer std_logic;    -- blank (represents output enable OE) turns off display by being written high, latch (high->low) loads data into a row
           A3, A2, A1, A0 : out std_logic;     --  4 address values (determines which line to display out of 32) (A4 is unused as it is unncessary for 32x32 matrix)
-          R0,G0,B0,R1,G1,B1 : out std_logic); -- color value (R0,G0,B0 for upper half of board; R1, G1, B1 for lower half of board)
+          R0,G0,B0,R1,G1,B1 : out std_logic; -- color value (R0,G0,B0 for upper half of board; R1, G1, B1 for lower half of board)
+          SW_middle : in std_logic);
 end HUB75Protocol;
 
 
@@ -44,9 +45,9 @@ architecture behav of HUB75Protocol is
     --signal latchData: std_logic;   -- will allow determination of next step to take
     --signal latchIn, blankIn : std_logic := '0';    -- will determine what is going to be output onto matrix board (also means it can be read during process unlike output latch and blank)
 
-    --signal rowCount : unsigned(3 downto 0) := "0000";      -- signal for row address, counts up to 15 (16 total rows)
-    --signal colCount : unsigned(4 downto 0) := "00000";      -- signal for current column, counts up to 31 (32 total columns)
-
+    signal rowCount : unsigned(3 downto 0) := "0000";      -- signal for row address, counts up to 15 (16 total rows)
+    signal colCount : unsigned(4 downto 0) := "00000";      -- signal for current column, counts up to 31 (32 total columns)
+    signal user_Dim : unsigned(2 downto 0) := "000";
     --signal clockCol : std_logic := '0';
 
     --signal rgb : unsigned(2 downto 0) := "001";            -- signal for color values of an individual pixel (initial value: blue)
@@ -72,6 +73,11 @@ architecture behav of HUB75Protocol is
         );
     end component;
 
+
+    -- ***FRAME BUFFER ***
+    type SROM is array (positive range <>) of std_logic_vector(2 downto 0);
+   -- signal FrameROM : SROM(8*8-1 downto 0) := 
+    --    {"000", "000", "000", "000", "000", "000", "000"
 -- ***Architecture begin***
 begin
 
@@ -105,11 +111,9 @@ begin
     ------------------------------------------------------------------------------------------------
     Main: process(clk_div)
      --*** Variable declarations: ***
-     variable rowCount : unsigned(3 downto 0) := "0000";   --signal for row address, counts up to 15 (16 total rows)
-     variable colCount : unsigned(4 downto 0) := "00000";  -- signal for current column, counts up to 31 (32 total columns)
-     variable cycleRGB : integer := 1;                     -- will determine when to change RGB values
-     variable rgb : std_logic_vector(2 downto 0) := "000";         -- signal for color values of an individual pixel (initial value: black)   
-
+     variable cycleRGB : integer := 1;                    -- will determine when to change RGB values
+     variable rgb : unsigned(2 downto 0) := "111";         -- signal for color values of an individual pixel (initial value: black)   
+     variable dim : unsigned(2 downto 0) := "000";
      --*** PROCESS BEGIN ***               
         begin
             if blank = '1' then
@@ -135,16 +139,20 @@ begin
                     R1 <= rgb(2); G1 <= rgb(1); B1 <= rgb(0);
                     -- Indicates all data is loaded into the columns, and row is ready to be latch (low to high)
                     if colCount = "11111" then 
-                        colCount := "00000";
-                        willLatchData <= '1';
-                        
-                        --*** LOGIC TO SHIFT RGB VALUE ***
-                        cycleRGB := cycleRGB + 1;
-                            if cycleRGB = 100000 then -- Looking for 50 cycles of all columns being refreshed
-                                cycleRGB := 1;
-                                rgb := std_logic_vector(unsigned(rgb) + 1); -- increment color value by 1 (entire pattern is 8 including off)
-                            end if;
-                            
+                        colCount <= "00000";
+                        if dim = user_Dim then
+                            dim := "000";
+                            willLatchData <= '1';
+                            --*** LOGIC TO SHIFT RGB VALUE ***
+                          --  cycleRGB := cycleRGB + 1;
+                          --      if cycleRGB = 100000 then -- Looking for 50 cycles of all columns being refreshed
+                           --         cycleRGB := 1;
+                           --         rgb := rgb + 1; -- increment color value by 1 (entire pattern is 8 including off)
+                           --     end if;
+                        else 
+                            dim := dim + 1;
+                            willLatchData <= '0';
+                        end if;
                     -- The following elsif's handle latching data into the row before moving onto the next
                     elsif willLatchData = '1' then
                         willLatchData <= '0';
@@ -152,13 +160,13 @@ begin
                     elsif latch = '1' then 
                         latch <= '0'; -- reset latch
                         blank <= '0'; -- turn current row on
-                        rowCount := rowCount + 1; -- move to next row 
+                        rowCount <= rowCount + 1; -- move to next row 
                         A3 <= rowCount(3);
                         A2 <= rowCount(2);
                         A1 <= rowCount(1);
                         A0 <= rowCount(0);
                     else 
-                         colCount := colCount + 1; -- Move to the next column if still possible
+                         colCount <= colCount + 1; -- Move to the next column if still possible
                     end if;
                     
                 end if;   
@@ -167,6 +175,19 @@ begin
             end if;
     end process;
 
+    
+    process(clk_div) 
+    variable shiftBtn : std_logic_vector(4 downto 0);
+    begin 
+        if rising_edge(clk) then
+            shiftBtn := shiftBtn(3 downto 0) & SW_middle;
+            if shiftBtn = "11111" then
+                user_Dim <= user_Dim + 1;
+            else
+                user_Dim <= user_Dim + 0;
+        end if;
+    end if;
+    end process;
 
     
     -- *** OLD ITERATIONS: INCORRECT/UNUSED
