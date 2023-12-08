@@ -52,7 +52,7 @@ architecture behav of HUB75Protocol is
     --signal count : integer := 1;                -- Count signals for clock divider/pulse width
     --signal clk_div : std_logic;                 -- 60 kHz clock to use for outputting to board as well as in main process
     
-    
+    signal willLatchData, willSetBlank : std_logic := '0'; -- will let process know when to get ready to latch (high -> signal to board)
 ----------------------------------------------------------------------------------------------------
 
 -- ***Architecture begin***
@@ -85,7 +85,6 @@ begin
      variable colCount : unsigned(4 downto 0) := "00000";  -- signal for current column, counts up to 31 (32 total columns)
      variable rgb : unsigned(2 downto 0) := "000";         -- signal for color values of an individual pixel (initial value: black)
      variable cycleRGB : integer := 1;                     -- will determine when to change RGB values
-     variable willLatchData : std_logic := '0';            -- will let process know when to get ready to latch (high -> signal to board)
 
      --*** PROCESS BEGIN ***               
         begin
@@ -97,47 +96,49 @@ begin
                 -- *** LOGIC TO HANDLE REFRESHING: ***
                 ----------------------------------------------------------------------------------------------------------------------------------------
                 if blank = '0' then   -- If blank is not set, then line is active (TURN OFF NEXT ROW)
-                     blank <= '1'; -- asserting blank high turns off row
-                     latch <= '0'; -- assert latch low
-                     willLatchData := '0'; -- Will need to wait for another column refresh to latch A0
-                     
-                elsif blank = '1' then  -- else blank is set, and line is not active (updating colors will now take place)
+                     if willSetBlank = '0' then
+                        willSetBlank <= '1';
+                     else 
+                        willSetBlank <= '0';
+                        blank <= '1';
+                     end if;
+
+                else   -- else blank is set, and line is not active (updating colors will now take place)
 
                     -- Send in current RGB Data to board
                     R0 <= rgb(2); G0 <= rgb(1); B0 <= rgb(0);
                     R1 <= rgb(2); G1 <= rgb(1); B1 <= rgb(0);
                     -- Indicates all data is loaded into the columns, and row is ready to be latch (low to high)
                     if colCount = "11111" then 
-                        if willLatchData = '0' then
-                            latch <= '1'; 
-                            willLatchData := '1'; -- Indicates that the latch will be written high to prepare the buffer to transfer
-                        elsif willLatchData = '1' then
-                            latch <= '0'; -- Buffer toggled from high to low loads data into the row
-                            blank <= '0'; 
-                            rowCount := rowCount + 1; -- Row address is incremented to the next
-                            colCount := "00000";
-                          -- **Update Address value out to board
-                            A3 <= std_logic(rowCount(3));
-                            A2 <= std_logic(rowCount(2));
-                            A1 <= std_logic(rowCount(1));
-                            A0 <= std_logic(rowCount(0));
-                        end if;
+                        colCount := "00000";
+                        willLatchData <= '1';
+                        
+                        --*** LOGIC TO SHIFT RGB VALUE ***
+                        cycleRGB := cycleRGB + 1;
+                            if cycleRGB = 100000 then
+                                cycleRGB := 1;
+                                rgb := rgb + 1;
+                            end if;
+                            
+                            
+                    elsif willLatchData = '1' then
+                        willLatchData <= '0';
+                        latch <= '1';
+                    elsif latch = '1' then 
+                        latch <= '0'; 
+                        blank <= '0';
+                        rowCount := rowCount + 1;
+                        A3 <= rowCount(3);
+                        A2 <= rowCount(2);
+                        A1 <= rowCount(1);
+                        A0 <= rowCount(0);
                     else 
                          colCount := colCount + 1; -- move to next column
                     end if;
-                else 
-                    blank <= '0';
-                    willLatchData := '0';
+                    
                 end if;   
                 
-                --*** LOGIC TO SHIFT RGB VALUE ***
-                cycleRGB := cycleRGB + 1;
-                if cycleRGB = 268435456 then
-                    cycleRGB := 1;
-                    rgb := rgb + 1;
-                end if;
                 ----------------------------------------------------------------------------------------------------------------------------------------
-
             end if;
     end process;
 
