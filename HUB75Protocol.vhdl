@@ -57,6 +57,9 @@ architecture behav of HUB75Protocol is
     signal reset : std_logic;
     signal locked : std_logic; 
     
+    -- buttons
+    signal SW_middle_out : std_logic;
+    
     signal willLatchData, willSetBlank : std_logic := '0'; -- will let process know when to get ready to latch (high -> signal to board)
 ----------------------------------------------------------------------------------------------------
 
@@ -73,10 +76,17 @@ architecture behav of HUB75Protocol is
         );
     end component;
 
+    -- *** HOLDS PRE DETERMINED VALUES ACCORDING TO DIM
+    type Dim is array (7 downto 0) of integer;
+    signal DimLookup : Dim := (1000000, 860714,721428, 582142, 442857,303571,164285,25000);
+
 
     -- ***FRAME BUFFER ***
-    type SROM is array (positive range <>) of std_logic_vector(2 downto 0);
-   -- signal FrameROM : SROM(8*8-1 downto 0) := 
+    type SROM is array (natural range <>, natural range<>) of std_logic_vector(2 downto 0);
+    signal squareSprite : SROM(3 downto 0, 3 downto 0);
+                                                         
+                                                         
+     
     --    {"000", "000", "000", "000", "000", "000", "000"
 -- ***Architecture begin***
 begin
@@ -90,6 +100,7 @@ begin
     --latch <= latchIn;
     --blank <= blankIn;
 
+    --squareSprite <= ("111", "111", "111", "111", "111", "111", "111", "111", "111", "111", "111", "111","111", "111", "111", "111");
     
     --clk_out <= clk_div; -- clock the data into the columns
     
@@ -112,7 +123,7 @@ begin
     Main: process(clk_div)
      --*** Variable declarations: ***
      variable cycleRGB : integer := 1;                    -- will determine when to change RGB values
-     variable rgb : unsigned(2 downto 0) := "111";         -- signal for color values of an individual pixel (initial value: black)   
+     variable rgb : unsigned(2 downto 0) := "000";         -- signal for color values of an individual pixel (initial value: black)   
      variable dim : unsigned(2 downto 0) := "000";
      --*** PROCESS BEGIN ***               
         begin
@@ -144,11 +155,13 @@ begin
                             dim := "000";
                             willLatchData <= '1';
                             --*** LOGIC TO SHIFT RGB VALUE ***
-                          --  cycleRGB := cycleRGB + 1;
-                          --      if cycleRGB = 100000 then -- Looking for 50 cycles of all columns being refreshed
-                           --         cycleRGB := 1;
-                           --         rgb := rgb + 1; -- increment color value by 1 (entire pattern is 8 including off)
-                           --     end if;
+                            cycleRGB := cycleRGB + 1;
+                                if cycleRGB = DimLookup(to_integer(user_Dim)) then 
+                                    cycleRGB := 1;
+                                    rgb := rgb + 1; -- increment color value by 1 (entire pattern is 8 including off)
+                                elsif cycleRGB > DimLookup(to_integer(user_Dim)) then
+                                    cycleRGB := 1;
+                                end if;
                         else 
                             dim := dim + 1;
                             willLatchData <= '0';
@@ -177,18 +190,29 @@ begin
 
     
     process(clk_div) 
-    variable shiftBtn : std_logic_vector(4 downto 0);
+    variable shiftBtn : std_logic_vector(19 downto 0);
     begin 
-        if rising_edge(clk) then
-            shiftBtn := shiftBtn(3 downto 0) & SW_middle;
-            if shiftBtn = "11111" then
-                user_Dim <= user_Dim + 1;
+        if rising_edge(clk_div) then
+            shiftBtn := shiftBtn(18 downto 0) & SW_middle;
+            if shiftBtn = "11111111111111111111" then
+                SW_middle_out <= '1';
             else
-                user_Dim <= user_Dim + 0;
+                SW_middle_out <= '0';
         end if;
     end if;
     end process;
 
+    process(SW_middle_out)
+    begin 
+    if rising_edge(clk_div) then
+        if SW_middle_out = '1' then
+            user_Dim <= user_Dim + 1;
+        end if;
+    end if;
+    end process;
+    
+    
+    
     
     -- *** OLD ITERATIONS: INCORRECT/UNUSED
     ---------------------------------------------------------------------------------------------------------------------------
