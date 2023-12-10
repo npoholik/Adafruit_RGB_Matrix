@@ -104,14 +104,14 @@ set_property PACKAGE_PIN W4 [get_ports {dimEN[3]}]
 ##Buttons
 set_property PACKAGE_PIN U18 [get_ports SW_middle]						
 	set_property IOSTANDARD LVCMOS33 [get_ports SW_middle]
-#set_property PACKAGE_PIN T18 [get_ports btnU]						
-	#set_property IOSTANDARD LVCMOS33 [get_ports btnU]
-#set_property PACKAGE_PIN W19 [get_ports btnL]						
-	#set_property IOSTANDARD LVCMOS33 [get_ports btnL]
-#set_property PACKAGE_PIN T17 [get_ports btnR]						
-	#set_property IOSTANDARD LVCMOS33 [get_ports btnR]
-#set_property PACKAGE_PIN U17 [get_ports btnD]						
-	#set_property IOSTANDARD LVCMOS33 [get_ports btnD]
+set_property PACKAGE_PIN T18 [get_ports SW_up]						
+	set_property IOSTANDARD LVCMOS33 [get_ports SW_up]
+set_property PACKAGE_PIN W19 [get_ports SW_left]						
+	set_property IOSTANDARD LVCMOS33 [get_ports SW_left]
+set_property PACKAGE_PIN T17 [get_ports SW_right]						
+	set_property IOSTANDARD LVCMOS33 [get_ports SW_right]
+set_property PACKAGE_PIN U17 [get_ports SW_down]						
+	set_property IOSTANDARD LVCMOS33 [get_ports SW_down]
  
 
 
