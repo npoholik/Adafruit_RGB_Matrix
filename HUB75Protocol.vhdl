@@ -24,7 +24,9 @@ entity HUB75Protocol is
           blank, latch : buffer std_logic;    -- blank (represents output enable OE) turns off display by being written high, latch (high->low) loads data into a row
           A3, A2, A1, A0 : out std_logic;     --  4 address values (determines which line to display out of 32) (A4 is unused as it is unncessary for 32x32 matrix)
           R0,G0,B0,R1,G1,B1 : out std_logic; -- color value (R0,G0,B0 for upper half of board; R1, G1, B1 for lower half of board)
-          SW_middle : in std_logic);
+          SW_middle : in std_logic;
+          dimEN : out std_logic_vector(3 downto 0);
+          dimSegment : out std_logic_vector(6 downto 0));
 end HUB75Protocol;
 
 
@@ -59,6 +61,7 @@ architecture behav of HUB75Protocol is
     
     -- buttons
     signal SW_middle_out : std_logic;
+    signal SW_mid_prev : std_logic;
     
     signal willLatchData, willSetBlank : std_logic := '0'; -- will let process know when to get ready to latch (high -> signal to board)
 ----------------------------------------------------------------------------------------------------
@@ -78,12 +81,15 @@ architecture behav of HUB75Protocol is
 
     -- *** HOLDS PRE DETERMINED VALUES ACCORDING TO DIM
     type Dim is array (7 downto 0) of integer;
-    signal DimLookup : Dim := (1000000, 860714,721428, 582142, 442857,303571,164285,25000);
-
+    signal DimLookup : Dim := (1200000, 871428,742857, 614285, 485714,357142,228571,125000);
+    -- Stores the counter values for each various user dim input
+        -- Math: 1,000,000 - [(1,000,000 - 100,000)/7] * Index
+            -- Where 1,000,000 - 100,000 represents the range and 7 represents the # of steps
+            -- Numbers that differ required slight calibration tweaks (1 mil to 1.2, 100,000 to 125k)
 
     -- ***FRAME BUFFER ***
-    type SROM is array (natural range <>, natural range<>) of std_logic_vector(2 downto 0);
-    signal squareSprite : SROM(3 downto 0, 3 downto 0);
+    --type SROM is array (integer, integer) of std_logic_vector(2 downto 0);
+    --signal squareSprite : SROM(4,4) := ("111", "111", "111", "111", "111", "111", "111", "111", "111", "111", "111", "111","111", "111", "111", "111");
                                                          
                                                          
      
@@ -100,7 +106,6 @@ begin
     --latch <= latchIn;
     --blank <= blankIn;
 
-    --squareSprite <= ("111", "111", "111", "111", "111", "111", "111", "111", "111", "111", "111", "111","111", "111", "111", "111");
     
     --clk_out <= clk_div; -- clock the data into the columns
     
@@ -156,10 +161,10 @@ begin
                             willLatchData <= '1';
                             --*** LOGIC TO SHIFT RGB VALUE ***
                             cycleRGB := cycleRGB + 1;
-                                if cycleRGB = DimLookup(to_integer(user_Dim)) then 
+                                if cycleRGB = DimLookup(7 - to_integer(user_Dim)) then 
                                     cycleRGB := 1;
                                     rgb := rgb + 1; -- increment color value by 1 (entire pattern is 8 including off)
-                                elsif cycleRGB > DimLookup(to_integer(user_Dim)) then
+                                elsif cycleRGB > DimLookup(7 - to_integer(user_Dim)) then
                                     cycleRGB := 1;
                                 end if;
                         else 
@@ -189,7 +194,7 @@ begin
     end process;
 
     
-    process(clk_div) 
+    Button_Debouncing: process(clk_div) 
     variable shiftBtn : std_logic_vector(19 downto 0);
     begin 
         if rising_edge(clk_div) then
@@ -202,16 +207,34 @@ begin
     end if;
     end process;
 
-    process(SW_middle_out)
+    Button_Edge_Detector:process(clk_div)
     begin 
     if rising_edge(clk_div) then
-        if SW_middle_out = '1' then
+        SW_mid_prev <= SW_middle_out;
+        if SW_middle_out = '1' and SW_mid_prev = '0' then --detect a positive edge on the button
             user_Dim <= user_Dim + 1;
         end if;
     end if;
     end process;
     
     
+    SevenSegment: process(clk_div)
+    begin
+        if rising_edge(clk_div) then
+            case user_Dim is
+                when "000" => dimSegment <= "1000000";
+                when "001" => dimSegment <= "1111001";
+                when "010" => dimSegment <= "0100100";
+                when "011" => dimSegment <= "0110000";
+                when "100" => dimSegment <= "0011001";
+                when "101" => dimSegment <= "0010010";
+                when "110" => dimSegment <= "0000010";
+                when "111" => dimSegment <= "1111000";
+                when others => dimSegment <= "1111111";
+            end case;
+            dimEN <= "1110"; -- Active low Anode enables 
+        end if;
+    end process;
     
     
     -- *** OLD ITERATIONS: INCORRECT/UNUSED
