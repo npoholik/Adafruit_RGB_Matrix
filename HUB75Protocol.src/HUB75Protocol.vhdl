@@ -6,11 +6,7 @@
 -- Design Name: HUB75Protocol
 -- Module Name: HUB75Protocol - behav
 -- Project Name: AdaFruit_RGB_Matrix
--- Target Devices: Basys 3 FPGA, 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
+-- Target Devices: Basys 3 FPGA, AdaFruit 32x32 RGB Matrix
 ----------------------------------------------------------------------------------
 Library ieee;
 use IEEE.STD_LOGIC_1164.all;
