@@ -88,13 +88,12 @@ architecture behav of HUB75Protocol is
     component clk_wiz
         port
         (-- Clock out ports
-          clk_out          : out    std_logic;
+          clk_out : out std_logic;
          -- Status and control signals (UNUSED IN CURRENT DESIGN)
-          reset             : in     std_logic;
-          locked            : out    std_logic;
+          reset : in std_logic;
+          locked : out std_logic;
           -- Clock in ports
-          clk_in           : in     std_logic
-        );
+          clk_in : in std_logic );
     end component;
 
     -- *** DECLARE A LOOKUP TABLE FOR RGB REFRESH ACCORDING TO DIM STATUS ***
@@ -155,10 +154,9 @@ begin
             reset => reset,
             locked => locked,
         -- Clock in ports
-            clk_in => clk
-        );
+            clk_in => clk );
     ------------------------------------------------------------------------------------------------
-\
+
 
     -- ***Sequential Blocks: ***
     ------------------------------------------------------------------------------------------------
@@ -254,7 +252,7 @@ begin
     end process;
 
     -- Create a shift register of 20 bits to handle button debouncing for the middle button (dimming button)
-    Button_Debouncing: process(clk_div) 
+    Middle_Button_Debouncing: process(clk_div) 
         -- A variable will update immediately in response to signals from the button 
         variable shiftBtn : std_logic_vector(19 downto 0);
     begin 
@@ -269,7 +267,7 @@ begin
     end process;
 
     -- Create an edge detector for the middle button (dimming button)
-    Button_Edge_Detector:process(clk_div)
+    Middle_Button_Edge_Detector:process(clk_div)
     begin 
         if rising_edge(clk_div) then
             -- Store the previous button result in a signal (signals will lag behind the output of the debouncing)
@@ -286,7 +284,7 @@ begin
     
     -- Create a process to display to the seven segment display and show the user what dim setting they are currently at
     -- Synthesizes as a multiplexor 
-    SevenSegment: process(clk_div)
+    Seven_Segment: process(clk_div)
     begin
         if rising_edge(clk_div) then
             case user_Dim is
@@ -305,7 +303,7 @@ begin
     end process;
     
     -- Create a shift register of 20 bits to handle button debouncing for the up, down, left, and right buttons
-    Position_Movement_Debouncing: process(clk_div)
+    Position_Buttons_Debouncing: process(clk_div)
         -- Variables will update immediately in response to signals from the button 
         variable shiftBtnUp : std_logic_vector(19 downto 0);
         variable shiftBtnLeft : std_logic_vector(19 downto 0);
@@ -346,7 +344,7 @@ begin
     
     
     -- Create an edge detector for button presses of the up, down, left, and right buttons
-    Position_Movement_Edge_Detector: process(clk_div)
+    Position_Buttons_Edge_Detector: process(clk_div)
     begin 
         if rising_edge(clk_div) then
             -- store the previous button result in signals (signals will lag behind the output of the debouncing)
