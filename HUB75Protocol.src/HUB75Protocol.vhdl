@@ -279,6 +279,7 @@ begin
     begin
         if rising_edge(clk_div) then
             case user_Dim is
+                -- **FOR BASYS 3: 7 Segment Display is Active Low, and order goes gfedcba
                 when "000" => dimSegment <= "1000000";
                 when "001" => dimSegment <= "1111001";
                 when "010" => dimSegment <= "0100100";
