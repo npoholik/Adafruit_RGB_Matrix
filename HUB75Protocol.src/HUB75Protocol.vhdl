@@ -12,12 +12,7 @@ Library ieee;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.STD_LOGIC_UNSIGNED.all;
 use IEEE.NUMERIC_STD.all;
-
-Library ieee;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.STD_LOGIC_UNSIGNED.all;
-use IEEE.NUMERIC_STD.all;
-
+----------------------------------------------------------------------------------
 
 entity HUB75Protocol is
     port (clk : in std_logic;                               -- Internal clock, Basys 3 clock ~100 MHz
