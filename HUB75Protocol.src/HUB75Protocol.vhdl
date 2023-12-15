@@ -275,23 +275,21 @@ begin
     
     -- Create a process to display to the seven segment display and show the user what dim setting they are currently at
     -- Synthesizes as a multiplexor 
-    Seven_Segment: process(clk_div)
+    Seven_Segment: process(user_Dim)
     begin
-        if rising_edge(clk_div) then
-            case user_Dim is
-                -- **FOR BASYS 3: 7 Segment Display is Active Low, and order goes gfedcba
-                when "000" => dimSegment <= "1000000";
-                when "001" => dimSegment <= "1111001";
-                when "010" => dimSegment <= "0100100";
-                when "011" => dimSegment <= "0110000";
-                when "100" => dimSegment <= "0011001";
-                when "101" => dimSegment <= "0010010";
-                when "110" => dimSegment <= "0000010";
-                when "111" => dimSegment <= "1111000";
-                when others => dimSegment <= "1111111";
+        case user_Dim is
+            -- **FOR BASYS 3: 7 Segment Display is Active Low, and order goes gfedcba
+            when "000" => dimSegment <= "1000000";
+            when "001" => dimSegment <= "1111001";
+            when "010" => dimSegment <= "0100100";
+            when "011" => dimSegment <= "0110000";
+            when "100" => dimSegment <= "0011001";
+            when "101" => dimSegment <= "0010010";
+            when "110" => dimSegment <= "0000010";
+            when "111" => dimSegment <= "1111000";
+            when others => dimSegment <= "1111111";
             end case;
             dimEN <= "1110"; -- Active low Anode enables 
-        end if;
     end process;
     
     -- Create a shift register of 20 bits to handle button debouncing for the up, down, left, and right buttons
@@ -366,6 +364,6 @@ begin
         end if;
     end process;
     
-    ------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------
 -- *** END ARCHITECTURE
 end behav;
