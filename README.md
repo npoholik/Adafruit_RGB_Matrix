@@ -1,4 +1,9 @@
 # Adafruit_RGB_Matrix
+
+>Drive a 32x32 RGB Matrix using an FPGA Board
+
+---------------------------------------------------------------------------------------------------
+
 For this project, a Basys 3 board and an Adafruit RGB matrix are being utilized with the goal to develop a pattern generator (written in VHDL), create a double buffered frame buffer, and output drive logic to display patterns on the RGB matrix. 
 
 ---------------------------------------------------------------------------------------------------
